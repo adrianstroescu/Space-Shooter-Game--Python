@@ -9,14 +9,14 @@ pygame.init()
 pygame.mixer.init()
 
 # Load background music
-pygame.mixer.music.load("background_music.mp3")
+pygame.mixer.music.load("assets/music/background_music.mp3")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 
 # Load sound effects
-shoot_sound = pygame.mixer.Sound("shoot.wav")
-destroy_sound = pygame.mixer.Sound("destroy.wav")
-damage_sound = pygame.mixer.Sound("damage-sound.mp3")
+shoot_sound = pygame.mixer.Sound("assets/sounds/shoot.wav")
+destroy_sound = pygame.mixer.Sound("assets/sounds/destroy.wav")
+damage_sound = pygame.mixer.Sound("assets/music/damage-sound.mp3")
 
 # Set up display
 width, height = 600, 800
@@ -29,16 +29,16 @@ white = (255, 255, 255)
 red = (255, 0, 0)
 
 # Load assets
-background_image = pygame.image.load("background_image.png")
+background_image = pygame.image.load("assets/images/background_image.png")
 background_image = pygame.transform.scale(background_image, (width, height))
 
-player_image = pygame.image.load("player_spaceship.png")
+player_image = pygame.image.load("assets/images/player_spaceship.png")
 player_width, player_height = 50, 40
 player_image = pygame.transform.scale(player_image, (player_width, player_height))
 
 # Load asteroid images
 asteroid_images = [
-    pygame.image.load(f"asteroid_{i}.png") for i in range(1, 9)
+    pygame.image.load(f"assets/images/asteroid_{i}.png") for i in range(1, 9)
 ]
 
 # Scale asteroid images
@@ -97,10 +97,23 @@ def draw_health_bar():
 
 # Shake effect function
 def shake_screen():
-    for _ in range(5):
-        screen.blit(background_image, (random.randint(-5, 5), random.randint(-5, 5)))
+    for _ in range(3):
+        screen.blit(background_image, (random.randint(-3, 3), random.randint(-3, 3)))
         pygame.display.flip()
-        pygame.time.delay(20)
+        pygame.time.delay(10)
+
+# Reset game state function
+def reset_game():
+    global player_health, player_speed, score, timer, bullets, enemies, power_ups, player_speed_boost
+    player_health = max_health
+    player.x = width // 2 - player_width // 2
+    bullets.clear()
+    enemies.clear()
+    power_ups.clear()
+    player_speed_boost = False
+    player_speed = 7
+    score = 0
+    timer = 0
 
 # Game loop
 while True:
