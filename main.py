@@ -44,6 +44,10 @@ asteroid_images = [
 # Scale asteroid images
 asteroid_images = [pygame.transform.scale(img, (50, 40)) for img in asteroid_images]
 
+# Load explosion image
+explosion_image = pygame.image.load("assets/images/explostion_asteroid.png")
+explosion_image = pygame.transform.scale(explosion_image, (50, 50))
+
 # Player setup
 player = pygame.Rect(width // 2 - player_width // 2, height - 60, player_width, player_height)
 player_speed = 7
@@ -73,6 +77,13 @@ double_shot_active = False
 double_shot_timer = 0
 double_shot_duration = 300
 
+# Update power-up colors
+power_up_colors = {
+    'speed': (0, 255, 0),  # Green for speed
+    'shield': (0, 255, 255),  # Cyan for shield
+    'double_shot': (255, 255, 0)  # Yellow for double shot
+}
+
 # Player health
 player_health = 100
 max_health = 100
@@ -86,6 +97,15 @@ clock = pygame.time.Clock()
 
 # Fonts
 font = pygame.font.Font(None, 36)
+
+# Define a custom class for explosions
+class Explosion:
+    def __init__(self, x, y, timer):
+        self.rect = pygame.Rect(x, y, 50, 50)
+        self.timer = timer
+
+# Update explosions list to use the Explosion class
+explosions = []
 
 # Draw health bar
 def draw_health_bar():
@@ -171,6 +191,9 @@ while True:
         if enemy.top > height:
             enemies.remove((enemy, enemy_type))
 
+    # Update player collision to use a bounding box
+    player_collision_box = pygame.Rect(player.x + 10, player.y + 5, player_width - 20, player_height - 10)
+
     # Check for collisions
     for enemy, enemy_type in enemies[:]:
         for bullet in bullets[:]:
@@ -179,25 +202,21 @@ while True:
                 bullets.remove(bullet)
                 score += 10
                 destroy_sound.play()
+                explosions.append(Explosion(enemy.x, enemy.y, 15))  # Explosion lasts for 15 frames
                 break
-        if enemy.colliderect(player):
+        if player_collision_box.colliderect(enemy):
             if not shield_active:
                 enemies.remove((enemy, enemy_type))
                 player_health -= 20
                 damage_sound.play()
                 shake_screen()
                 if player_health <= 0:
-                    # Reset game state
-                    player_health = max_health
-                    player.x = width // 2 - player_width // 2
-                    bullets.clear()
-                    enemies.clear()
-                    power_ups.clear()
-                    player_speed_boost = False
-                    player_speed = 7
-                    score = 0
-                    timer = 0
+                    reset_game()
                     break
+
+    # Update player collision box position
+    player_collision_box.x = player.x + 10
+    player_collision_box.y = player.y + 5
 
     # Spawn power-ups
     power_up_timer += 1
@@ -256,9 +275,17 @@ while True:
     for enemy, enemy_type in enemies:
         screen.blit(enemy_type, (enemy.x, enemy.y))
 
-    # Draw power-ups
+    # Draw power-ups with different colors
     for power_up in power_ups:
-        pygame.draw.rect(screen, (0, 0, 255), power_up)
+        power_up_type = random.choice(['speed', 'shield', 'double_shot'])
+        pygame.draw.rect(screen, power_up_colors[power_up_type], power_up)
+
+    # Update explosions
+    for explosion in explosions[:]:
+        screen.blit(explosion_image, (explosion.rect.x, explosion.rect.y))
+        explosion.timer -= 1
+        if explosion.timer <= 0:
+            explosions.remove(explosion)
 
     # Render and display score
     score_text = font.render(f"Score: {score}", True, white)
