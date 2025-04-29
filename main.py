@@ -170,6 +170,73 @@ def draw_resume_button():
     resume_text = font.render("Resume", True, black)
     screen.blit(resume_text, (resume_button.x + 50, resume_button.y + 10))
 
+# Add game states for detailed game flow
+START_SCREEN = 0
+STORY_SCREEN = 1
+GAMEPLAY_SCREEN = 2
+GAME_OVER_SCREEN = 3
+
+game_state = START_SCREEN
+
+# Initialize story variables
+story_texts = [
+    "In the year 3050, Earth has been invaded by alien forces...",
+    "You, the last surviving pilot of the Galactic Federation.",
+    "Must protect the last remaining base in space.",
+    "Collect power-ups and survive as long as you can!",
+    "Good luck, pilot!"
+]
+story_index = 0
+story_timer = 0
+story_display_duration = 200  # Display each story text for 3 seconds
+
+# Center and fit story texts to the screen width
+story_font = pygame.font.Font(None, 28)  # Adjust font size for better fit
+
+# Restore story text to display in parts
+story_texts = [
+    "In the year 3050, Earth has been invaded by alien forces...",
+    "You, the last surviving pilot of the Galactic Federation.",
+    "Must protect the last remaining base in space.",
+    "Collect power-ups and survive as long as you can!",
+    "Good luck, pilot!"
+]
+
+# Update draw_story_screen to display story in parts
+def draw_story_screen():
+    global story_index, story_timer
+    if story_index < len(story_texts):
+        story_text = story_font.render(story_texts[story_index], True, white)
+        text_rect = story_text.get_rect(center=(width // 2, height // 2))
+        screen.blit(story_text, text_rect.topleft)
+    else:
+        pygame.draw.rect(screen, (0, 255, 0), continue_button)
+        continue_text = font.render("Continue", True, black)
+        screen.blit(continue_text, (continue_button.x + 50, continue_button.y + 10))
+
+# Buttons for start and continue
+start_button = pygame.Rect(width // 2 - 100, height // 2 - 50, 200, 50)
+continue_button = pygame.Rect(width // 2 - 100, height // 2 + 50, 200, 50)
+restart_button = pygame.Rect(width // 2 - 100, height // 2 + 100, 200, 50)
+
+# Draw start screen
+def draw_start_screen():
+    title_text = font.render("Space Shooter", True, white)
+    title_rect = title_text.get_rect(center=(width // 2, height // 2 - 100))
+    screen.blit(title_text, title_rect.topleft)
+    pygame.draw.rect(screen, (0, 255, 0), start_button)
+    start_text = font.render("Play", True, black)
+    screen.blit(start_text, (start_button.x + 70, start_button.y + 10))
+
+# Draw game over screen
+def draw_game_over_screen():
+    game_over_text = font.render("Game Over", True, white)
+    game_over_rect = game_over_text.get_rect(center=(width // 2, height // 2 - 100))
+    screen.blit(game_over_text, game_over_rect.topleft)
+    pygame.draw.rect(screen, (0, 255, 0), restart_button)
+    restart_text = font.render("Restart", True, black)
+    screen.blit(restart_text, (restart_button.x + 50, restart_button.y + 10))
+
 # Game loop
 while True:
     clock.tick(60)  # 60 FPS
@@ -211,162 +278,189 @@ while True:
         pygame.display.flip()
         continue
 
-    # Key handling
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player.left > 0:
-        player.x -= player_speed
-    if keys[pygame.K_RIGHT] and player.right < width:
-        player.x += player_speed
-    if keys[pygame.K_UP] and player.top > 0:
-        player.y -= player_speed
-    if keys[pygame.K_DOWN] and player.bottom < height:
-        player.y += player_speed
-    if keys[pygame.K_SPACE]:
-        if len(bullets) < 5:
-            bullet = pygame.Rect(player.centerx - 2, player.top, 5, 10)
-            bullets.append(bullet)
-            if double_shot_active:
-                bullet2 = pygame.Rect(player.centerx - 2, player.top - 15, 5, 10)
-                bullets.append(bullet2)
-            shoot_sound.play()
+    # Update game loop to handle detailed game flow
+    if game_state == START_SCREEN:
+        draw_start_screen()
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if start_button.collidepoint(event.pos):
+                game_state = STORY_SCREEN
 
-    # Update bullets
-    for bullet in bullets[:]:
-        bullet.y -= bullet_speed
-        if bullet.bottom < 0:
-            bullets.remove(bullet)
+    elif game_state == STORY_SCREEN:
+        draw_story_screen()
+        if story_index < len(story_texts):
+            story_timer += 1
+            if story_timer > story_display_duration:
+                story_index += 1
+                story_timer = 0
+        else:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if continue_button.collidepoint(event.pos):
+                    game_state = GAMEPLAY_SCREEN
 
-    # Spawn enemies
-    enemy_timer += 1
-    if enemy_timer > 30:
-        enemy = pygame.Rect(random.randint(0, width - 50), -40, 50, 40)
-        enemy_type = random.choice(asteroid_images)
-        enemies.append((enemy, enemy_type))
-        enemy_timer = 0
+    elif game_state == GAMEPLAY_SCREEN:
+        # Key handling
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and player.left > 0:
+            player.x -= player_speed
+        if keys[pygame.K_RIGHT] and player.right < width:
+            player.x += player_speed
+        if keys[pygame.K_UP] and player.top > 0:
+            player.y -= player_speed
+        if keys[pygame.K_DOWN] and player.bottom < height:
+            player.y += player_speed
+        if keys[pygame.K_SPACE]:
+            if len(bullets) < 5:
+                bullet = pygame.Rect(player.centerx - 2, player.top, 5, 10)
+                bullets.append(bullet)
+                if double_shot_active:
+                    bullet2 = pygame.Rect(player.centerx - 2, player.top - 15, 5, 10)
+                    bullets.append(bullet2)
+                shoot_sound.play()
 
-    # Update enemies
-    for enemy, enemy_type in enemies[:]:
-        enemy.y += enemy_speed
-        if enemy.top > height:
-            enemies.remove((enemy, enemy_type))
-
-    # Update player collision to use a bounding box
-    player_collision_box = pygame.Rect(player.x + 10, player.y + 5, player_width - 20, player_height - 10)
-
-    # Check for collisions
-    for enemy, enemy_type in enemies[:]:
+        # Update bullets
         for bullet in bullets[:]:
-            if enemy.colliderect(bullet):
-                enemies.remove((enemy, enemy_type))
+            bullet.y -= bullet_speed
+            if bullet.bottom < 0:
                 bullets.remove(bullet)
-                score += 10
-                destroy_sound.play()
-                explosions.append(Explosion(enemy.x, enemy.y, 15))  # Explosion lasts for 15 frames
-                break
-        if player_collision_box.colliderect(enemy):
-            if not shield_active:
+
+        # Spawn enemies
+        enemy_timer += 1
+        if enemy_timer > 30:
+            enemy = pygame.Rect(random.randint(0, width - 50), -40, 50, 40)
+            enemy_type = random.choice(asteroid_images)
+            enemies.append((enemy, enemy_type))
+            enemy_timer = 0
+
+        # Update enemies
+        for enemy, enemy_type in enemies[:]:
+            enemy.y += enemy_speed
+            if enemy.top > height:
                 enemies.remove((enemy, enemy_type))
-                player_health -= 20
-                damage_sound.play()
-                shake_screen()
-                if player_health <= 0:
-                    update_leaderboard(score)
-                    reset_game()
+
+        # Update player collision to use a bounding box
+        player_collision_box = pygame.Rect(player.x + 10, player.y + 5, player_width - 20, player_height - 10)
+
+        # Check for collisions
+        for enemy, enemy_type in enemies[:]:
+            for bullet in bullets[:]:
+                if enemy.colliderect(bullet):
+                    enemies.remove((enemy, enemy_type))
+                    bullets.remove(bullet)
+                    score += 10
+                    destroy_sound.play()
+                    explosions.append(Explosion(enemy.x, enemy.y, 15))  # Explosion lasts for 15 frames
                     break
+            if player_collision_box.colliderect(enemy):
+                if not shield_active:
+                    enemies.remove((enemy, enemy_type))
+                    player_health -= 20
+                    damage_sound.play()
+                    shake_screen()
+                    if player_health <= 0:
+                        update_leaderboard(score)
+                        game_state = GAME_OVER_SCREEN
+                        break
 
-    # Update player collision box position
-    player_collision_box.x = player.x + 10
-    player_collision_box.y = player.y + 5
+        # Update player collision box position
+        player_collision_box.x = player.x + 10
+        player_collision_box.y = player.y + 5
 
-    # Spawn power-ups
-    power_up_timer += 1
-    if power_up_timer > 500:
-        power_up = pygame.Rect(random.randint(0, width - 30), random.randint(0, height - 30), 30, 30)
-        power_ups.append(power_up)
-        power_up_timer = 0
+        # Spawn power-ups
+        power_up_timer += 1
+        if power_up_timer > 500:
+            power_up = pygame.Rect(random.randint(0, width - 30), random.randint(0, height - 30), 30, 30)
+            power_ups.append(power_up)
+            power_up_timer = 0
 
-    # Update power-up collection logic
-    for power_up in power_ups[:]:
-        if player.colliderect(power_up):
-            power_ups.remove(power_up)
+        # Update power-up collection logic
+        for power_up in power_ups[:]:
+            if player.colliderect(power_up):
+                power_ups.remove(power_up)
+                power_up_type = random.choice(['speed', 'shield', 'double_shot'])
+                if power_up_type == 'speed':
+                    player_speed_boost = True
+                    boost_timer = power_up_effect_duration
+                elif power_up_type == 'shield':
+                    shield_active = True
+                    shield_timer = shield_duration
+                elif power_up_type == 'double_shot':
+                    double_shot_active = True
+                    double_shot_timer = double_shot_duration
+
+        # Apply power-up effect
+        if player_speed_boost:
+            player_speed = 10
+            boost_timer -= 1
+            if boost_timer <= 0:
+                player_speed_boost = False
+                player_speed = 7
+
+        # Apply shield effect
+        if shield_active:
+            shield_timer -= 1
+            if shield_timer <= 0:
+                shield_active = False
+
+        # Apply double-shot effect
+        if double_shot_active:
+            double_shot_timer -= 1
+            if double_shot_timer <= 0:
+                double_shot_active = False
+
+        # Draw player
+        screen.blit(player_image, (player.x, player.y))
+
+        # Draw shield effect
+        if shield_active:
+            pygame.draw.circle(screen, (0, 255, 255), player.center, player_width // 2, 2)
+
+        # Draw bullets
+        for bullet in bullets:
+            pygame.draw.rect(screen, red, bullet)
+
+        # Draw enemies
+        for enemy, enemy_type in enemies:
+            screen.blit(enemy_type, (enemy.x, enemy.y))
+
+        # Draw power-ups with different colors
+        for power_up in power_ups:
             power_up_type = random.choice(['speed', 'shield', 'double_shot'])
-            if power_up_type == 'speed':
-                player_speed_boost = True
-                boost_timer = power_up_effect_duration
-            elif power_up_type == 'shield':
-                shield_active = True
-                shield_timer = shield_duration
-            elif power_up_type == 'double_shot':
-                double_shot_active = True
-                double_shot_timer = double_shot_duration
+            pygame.draw.rect(screen, power_up_colors[power_up_type], power_up)
 
-    # Apply power-up effect
-    if player_speed_boost:
-        player_speed = 10
-        boost_timer -= 1
-        if boost_timer <= 0:
-            player_speed_boost = False
-            player_speed = 7
+        # Update explosions
+        for explosion in explosions[:]:
+            screen.blit(explosion_image, (explosion.rect.x, explosion.rect.y))
+            explosion.timer -= 1
+            if explosion.timer <= 0:
+                explosions.remove(explosion)
 
-    # Apply shield effect
-    if shield_active:
-        shield_timer -= 1
-        if shield_timer <= 0:
-            shield_active = False
+        # Render and display score
+        score_text = font.render(f"Score: {score}", True, white)
+        screen.blit(score_text, (10, 70))
 
-    # Apply double-shot effect
-    if double_shot_active:
-        double_shot_timer -= 1
-        if double_shot_timer <= 0:
-            double_shot_active = False
+        # Render and display timer
+        timer_text = font.render(f"Time: {elapsed_time}s", True, white)
+        screen.blit(timer_text, (10, 100))
 
-    # Draw player
-    screen.blit(player_image, (player.x, player.y))
+        # Render and display kill count
+        kill_count_text = font.render(f"Enemies shot: {score // 10}", True, white)
+        screen.blit(kill_count_text, (10, 10))
 
-    # Draw shield effect
-    if shield_active:
-        pygame.draw.circle(screen, (0, 255, 255), player.center, player_width // 2, 2)
+        # Draw health bar
+        draw_health_bar()
 
-    # Draw bullets
-    for bullet in bullets:
-        pygame.draw.rect(screen, red, bullet)
+        # Draw leaderboard
+        draw_leaderboard()
 
-    # Draw enemies
-    for enemy, enemy_type in enemies:
-        screen.blit(enemy_type, (enemy.x, enemy.y))
+        # Draw pause button in the game loop
+        draw_pause_button()
 
-    # Draw power-ups with different colors
-    for power_up in power_ups:
-        power_up_type = random.choice(['speed', 'shield', 'double_shot'])
-        pygame.draw.rect(screen, power_up_colors[power_up_type], power_up)
-
-    # Update explosions
-    for explosion in explosions[:]:
-        screen.blit(explosion_image, (explosion.rect.x, explosion.rect.y))
-        explosion.timer -= 1
-        if explosion.timer <= 0:
-            explosions.remove(explosion)
-
-    # Render and display score
-    score_text = font.render(f"Score: {score}", True, white)
-    screen.blit(score_text, (10, 70))
-
-    # Render and display timer
-    timer_text = font.render(f"Time: {elapsed_time}s", True, white)
-    screen.blit(timer_text, (10, 100))
-
-    # Render and display kill count
-    kill_count_text = font.render(f"Enemies shot: {score // 10}", True, white)
-    screen.blit(kill_count_text, (10, 10))
-
-    # Draw health bar
-    draw_health_bar()
-
-    # Draw leaderboard
-    draw_leaderboard()
-
-    # Draw pause button in the game loop
-    draw_pause_button()
+    elif game_state == GAME_OVER_SCREEN:
+        draw_game_over_screen()
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if restart_button.collidepoint(event.pos):
+                reset_game()
+                game_state = START_SCREEN
 
     # Update display
     pygame.display.flip()
