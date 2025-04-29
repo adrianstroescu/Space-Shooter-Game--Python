@@ -135,6 +135,41 @@ def reset_game():
     score = 0
     timer = 0
 
+# Leaderboard setup
+high_scores = [0, 0, 0]  # Top 3 high scores
+
+def update_leaderboard(new_score):
+    high_scores.append(new_score)
+    high_scores.sort(reverse=True)
+    del high_scores[3:]
+
+# Adjust leaderboard font size and position
+leaderboard_font = pygame.font.Font(None, 24)  # Smaller font size
+
+def draw_leaderboard():
+    leaderboard_text = leaderboard_font.render("Leaderboard:", True, white)
+    screen.blit(leaderboard_text, (width - 110, 60))  # Position under the pause button
+    for i, score in enumerate(high_scores):
+        score_text = leaderboard_font.render(f"{i + 1}. {score}", True, white)
+        screen.blit(score_text, (width - 110, 90 + i * 20))
+
+# Add a pause button in the top-right corner
+pause_button = pygame.Rect(width - 110, 10, 100, 40)
+paused = False
+
+def draw_pause_button():
+    pygame.draw.rect(screen, (255, 255, 0), pause_button)
+    pause_text = font.render("Pause", True, black)
+    screen.blit(pause_text, (pause_button.x + 10, pause_button.y + 5))
+
+# Add a resume button when the game is paused
+resume_button = pygame.Rect(width // 2 - 100, height // 2 - 25, 200, 50)
+
+def draw_resume_button():
+    pygame.draw.rect(screen, (0, 255, 0), resume_button)
+    resume_text = font.render("Resume", True, black)
+    screen.blit(resume_text, (resume_button.x + 50, resume_button.y + 10))
+
 # Game loop
 while True:
     clock.tick(60)  # 60 FPS
@@ -151,6 +186,30 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        # Handle pause button click
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if pause_button.collidepoint(event.pos):
+                paused = not paused
+
+    # Pause game logic
+    if paused:
+        pause_overlay = pygame.Surface((width, height))
+        pause_overlay.set_alpha(128)  # Semi-transparent overlay
+        pause_overlay.fill((0, 0, 0))
+        screen.blit(pause_overlay, (0, 0))
+        pause_message = font.render("Game Paused", True, white)
+        screen.blit(pause_message, (width // 2 - 100, height // 2 - 80))
+
+        # Draw resume button
+        draw_resume_button()
+
+        # Handle resume button click
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if resume_button.collidepoint(event.pos):
+                paused = False
+
+        pygame.display.flip()
+        continue
 
     # Key handling
     keys = pygame.key.get_pressed()
@@ -211,6 +270,7 @@ while True:
                 damage_sound.play()
                 shake_screen()
                 if player_health <= 0:
+                    update_leaderboard(score)
                     reset_game()
                     break
 
@@ -301,6 +361,12 @@ while True:
 
     # Draw health bar
     draw_health_bar()
+
+    # Draw leaderboard
+    draw_leaderboard()
+
+    # Draw pause button in the game loop
+    draw_pause_button()
 
     # Update display
     pygame.display.flip()
